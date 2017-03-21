@@ -32,7 +32,7 @@ class Dataloader(object):
 		self.epoch = 0
 		self.iter_in_epoch = 0
 
-		# self._shuffle()
+		self._shuffle()
 
 	def _shuffle(self):
 		self.img_list = np.random.permutation(self.img_list)
@@ -60,13 +60,14 @@ class Dataloader(object):
 			self.temp_pointer += 1
 
 			if self.temp_pointer >= self.num_images:
-				self.epoch += 1
 				self.iter_in_epoch = 0
-				self._shuffle()
+				# self._shuffle()
 				shuffle_flag = True
 
 		if shuffle_flag:
 			self._shuffle()
+			self.epoch += 1
+			self.iter_in_epoch = 0
 		else:
 			self.iter_in_epoch += 1
 

@@ -32,6 +32,8 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
 	session.run(init)
 	saver = tf.train.Saver()
 
+	fixed_noise = np.random.randn(config['batch_num'], 1, 1, config['noise_dim'])
+
 	niter = dataloader.get_iter_per_epoch() * config['epoch']
 	for i in xrange(niter):
 		img_blob = dataloader.get_next_minibatch()
@@ -53,6 +55,19 @@ with tf.Session(config=tf.ConfigProto(allow_soft_placement=True)) as session:
 				dataloader.get_iter_per_epoch(), 
 				disc_loss, gen_loss, Dx, Dz1, Dz2))
 
-		if dataloader.get_epoch() > 0 and dataloader.get_epoch() % 10 == 0:
-			saver.save(session, '../model/dcgan_epoch_' + str(dataloader.get_epoch()) + '.ckpt')
+		if i % (dataloader.get_iter_per_epoch() * 10) == 0:
+			if i > 0:
+				saver.save(session, '../model/dcgan_epoch_' + str(dataloader.get_epoch()) + '.ckpt')
+
+			# Visualization
+			feed_dict = {model.noise:fixed_noise}
+			fake = session.run(model.gen_img, feed_dict=feed_dict)[0:4,:,:,:]
+			fake = np.floor((fake + 1) * 128)
+
+			temp = np.zeros((config['img_size']*2, config['img_size']*2, 3))
+			temp[0:config['img_size'], 0:config['img_size'], :] = fake[0,:,:,:]
+			temp[config['img_size']:, 0:config['img_size'], :] = fake[1,:,:,:]
+			temp[0:config['img_size'], config['img_size']:, :] = fake[2,:,:,:]
+			temp[config['img_size']:, config['img_size']:, :] = fake[3,:,:,:]
+			cv2.imwrite('../example/epoch_' + str(dataloader.get_epoch()) + '.png', temp)
 
