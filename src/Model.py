@@ -27,6 +27,7 @@ class DCGAN(object):
 			[self.batch_num, 1, 1, self.noise_dim])
 
 		self.add_loss()
+		self.add_optim()
 
 	def add_gen(self):
 		# Deconv1
@@ -36,7 +37,7 @@ class DCGAN(object):
 
 			z_deconv1 = tf.nn.conv2d_transpose(self.noise, w_deconv1,
 				[self.batch_num, 4, 4, 1024],
-				strides=[1,1,1,1], padding='SAME', name='z')
+				strides=[1,1,1,1], padding='VALID', name='z')
 
 			bn_deconv1 = tf.contrib.layers.batch_norm(z_deconv1, 
 				is_training=self.is_training, scale=True, center=True,
@@ -99,6 +100,8 @@ class DCGAN(object):
 				strides=[1,2,2,1], padding='SAME', name='z')
 
 			a_deconv5 = tf.tanh(z_deconv5)
+
+		self.gen_img = a_deconv5
 
 		return a_deconv5
 
@@ -164,7 +167,7 @@ class DCGAN(object):
 				initializer=tf.truncated_normal_initializer(0.0, stddev=0.02))
 
 			z_conv5 = tf.nn.conv2d(a_conv4, w_conv5, strides=[1,2,2,1],
-				padding='SAME')
+				padding='VALID')
 
 			a_conv5 = tf.sigmoid(z_conv5)
 
@@ -176,7 +179,9 @@ class DCGAN(object):
 		fake = self.add_gen()
 		fake_pred = self.add_disc(fake)
 		one = tf.ones_like(fake_pred)
-		loss_fake = tf.reshape(-one + tf.log(fake_pred), (self.batch_num, 1))
+
+		# maximize log(D(x)) + log(1 - D(G(z)))
+		loss_fake = tf.reshape(-tf.log(one - fake_pred), (self.batch_num, 1))
 		loss_fake = tf.reduce_mean(loss_fake)
 
 		real_pred = self.add_disc(self.img)
@@ -185,11 +190,15 @@ class DCGAN(object):
 
 		disc_loss = loss_fake + loss_real
 
+		# maximize log(D(G(z)))
 		gen_loss = tf.reshape(-tf.log(fake_pred), (self.batch_num, 1))
 		gen_loss = tf.reduce_mean(gen_loss)
 
 		self.disc_loss = disc_loss
 		self.gen_loss = gen_loss
+
+		self.avg_real = tf.reduce_mean(real_pred)
+		self.avg_fake = tf.reduce_mean(fake_pred)
 
 	def add_optim(self):
 		self.vars_gen = []
@@ -199,7 +208,6 @@ class DCGAN(object):
 		self.vars_disc = []
 		for scope in ['conv1', 'conv2', 'conv3', 'conv4', 'conv5']:
 			self.vars_disc += tf.get_collection(tf.GraphKeys.TRAINABLE_VARIABLES, scope=scope)
-		self.vars_disc += self.vars_gen
 
 		self.train_disc_op = tf.train.AdamOptimizer(self.base_lr, 
 			beta1=self.beta1).minimize(self.disc_loss,
@@ -213,11 +221,11 @@ class DCGAN(object):
 if __name__ == '__main__':
 	config = {
 	'batch_num': 128,
-	'img_size': 32,
+	'img_size': 64,
 	'noise_dim': 100,
 	'is_training': True,
 	'base_lr': 0.0002,
 	'beta1': 0.5
 	}
 
-	dcgan = DCGAN(config)
+	model = DCGAN(config)
