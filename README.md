@@ -1,5 +1,7 @@
 # tf_dcgan
-A TensorFlow implementation of [dcgan](https://arxiv.org/pdf/1511.06434.pdf)
+A TensorFlow implementation of DC-GAN:
+
+[Unsupervised Representation Learning with Deep Convolutional Generative Adversarial Networks](https://arxiv.org/pdf/1511.06434.pdf)
 
 ## Dataset
 We will use celebA dataset in this implementation, please download it [here](http://mmlab.ie.cuhk.edu.hk/projects/CelebA.html)
@@ -10,7 +12,7 @@ Unzip the file, then
 ls *.png > img_set.txt
 ```
 
-And delect the last line (which is the name of this txt file itself)
+And then delete the last line (which is the name of this txt file itself)
 
 ## Some Generated Examples (fixed noise)
 
